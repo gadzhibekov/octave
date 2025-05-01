@@ -30,15 +30,6 @@ while true
     f_plot = f(x_plot);
     L_plot = arrayfun(@(x) lagrange_poly(x, nodes, values), x_plot);
 
-    % figure;
-    % plot(x_plot, f_plot, 'b-', 'LineWidth', 2, 'DisplayName', 'tan(x)');
-    % hold on;
-    % plot(x_plot, L_plot, 'r--', 'LineWidth', 2, 'DisplayName', sprintf('L(x) при n=%d', n));
-    % scatter(nodes, values, 100, 'k', 'filled', 'DisplayName', 'Узлы интерполяции');
-    % xlabel('x'); ylabel('y');
-    % title(sprintf('Интерполяция tan(x) (n=%d)', n));
-    % legend('show'); grid on; hold off;
-
     % 1.3
     df = @(x) 1 ./ (cos(x).^2);
     h = 1e-5;
@@ -98,58 +89,45 @@ while true
     end
 end
 
-fprintf('Задание 2\n');
-% 2.1
+fprintf("\nЗадание 2\n");
 a = 0;
 b = 1.5;
 epsilon = 1e-5;
 
 f = @(x) (2*x).^3 .* cos(x);
 
-i = 0;
-a_i = a;
-b_i = b;
-h_i = b_i - a_i;
+fprintf("[    a   ,          b   ] = значение интеграла\n");
+function integral = SimpsonRuleAdaptivePrint(f, a, b, epsilon)
+  c = (a + b) / 2;
+  h = b - a;
 
-function integral = SimpsonRule(f, a, b, h)
-    integral = (h/6) * (f(a) + 4*f((a + b) / 2) + f(b));
+  fa = f(a);
+  fb = f(b);
+  fc = f(c);
+
+  % Однократное вычисление интеграла с шагом h
+  I1 = (h / 6) * (fa + 4*fc + fb);
+
+  d = (a + c) / 2;
+  e = (c + b) / 2;
+
+  fd = f(d);
+  fe = f(e);
+
+  % Разбиение на два подинтервала
+  I2 = (h / 12) * (fa + 4*fd + 2*fc + 4*fe + fb);
+
+  R = abs(I2 - I1) / 15;
+
+  if R < epsilon
+    integral = I2;
+    fprintf("[%.6f,\t%.6f] = %.5f\n", a, b, integral);
+  else
+    integral_left = SimpsonRuleAdaptivePrint(f, a, c, epsilon/2);
+    integral_right = SimpsonRuleAdaptivePrint(f, c, b, epsilon/2);
+    integral = integral_left + integral_right;
+  end
 end
 
-total_integral = 0;
-
-while true
-    % 2.2
-    I_h_i = SimpsonRule(f, a_i, b_i, h_i);
-    
-    % 2.3
-    h_i_plus_1 = h_i / 2;
-
-    % 2.4
-    b_i_plus_1 = (a_i + b_i) / 2;
-
-    I_h_i_plus_1 = (h_i_plus_1 / 6) * (f(a_i) + ...
-        4*f(a_i + 0.5*h_i_plus_1) + ...
-        2*f(a_i + h_i_plus_1) + ...
-        4*f(b_i_plus_1) + ...
-        f(b_i));
-
-    % 2.5
-    R_i = abs(I_h_i - I_h_i_plus_1) / 15;
-
-    % 2.6
-    if R_i > (epsilon * h_i) / (b - a)
-        b_i = b_i_plus_1;
-    else
-        total_integral += I_h_i_plus_1;
-        a_i = b_i_plus_1;
-        b_i = b;
-    end
-
-    if a_i >= b_i
-        break;
-    end
-
-    h_i = b_i - a_i;
-end
-
-fprintf("Значение интеграла: %d\n", total_integral);
+total_integral = SimpsonRuleAdaptivePrint(f, a, b, epsilon);
+fprintf("\nИтоговое значение интеграла: %.5f\n", total_integral);
